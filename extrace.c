@@ -3,9 +3,13 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep extrace".
  *
- * -p PID   only show processes descendant of PID
- * -w       show full command line
- * -f       flat display without indentation
+ * Usage: extrace [-f] [-w] [-o FILE] [-p PID|CMD...]
+ * default: show all exec(), globally
+ * -p PID   only show exec() descendant of PID
+ * CMD...   run CMD... and only show exec() descendant of it
+ * -o FILE  log to FILE instead of standard output
+ * -w       wide output: show full command line
+ * -f       flat output: no indentation
  *
  * Copyright (C) 2014 Christian Neukirchen <chneukirchen@gmail.com>
  *
@@ -54,6 +58,7 @@
 
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #include <linux/connector.h>
 #include <linux/netlink.h>
@@ -77,15 +82,18 @@
 pid_t parent = 1;
 int width = 80;
 int flat = 0;
+int run = 0;
+FILE *output;
+sig_atomic_t quit = 0;
 
-int
+static int
 pid_depth(pid_t pid)
 {
   pid_t ppid = 0;
   FILE *f;
   char name[PATH_MAX];
   int d;
- 
+
   snprintf(name, sizeof name, "/proc/%d/stat", pid);
 
   if ((f = fopen(name, "r"))) {
@@ -106,7 +114,21 @@ pid_depth(pid_t pid)
   return d+1;
 }
 
-void
+static void
+sigint(int sig)
+{
+  quit = 1;
+}
+
+static void
+sigchld(int sig)
+{
+  while (waitpid(-1, NULL, WNOHANG) > 0)
+    ;
+  quit = 1;
+}
+
+static void
 handle_msg(struct cn_msg *cn_hdr)
 {
   char cmdline[CMDLINE_MAX], name[PATH_MAX];
@@ -134,12 +156,13 @@ handle_msg(struct cn_msg *cn_hdr)
         if (cmdline[i] == 0)
           cmdline[i] = ' ';
     }
-    
+
     snprintf(buf, min(sizeof buf, width+1),
              "%*s%d %s", flat ? 0 : 2*d, "",
              ev->event_data.exec.process_pid,
              cmdline);
-    printf("%s\n", buf);
+    fprintf(output, "%s\n", buf);
+    fflush(output);
   }
 }
 
@@ -160,37 +183,44 @@ main(int argc, char *argv[])
     width = atoi(getenv("COLUMNS"));
   if (width == 0)
     width = 80;
- 
-  while ((opt = getopt(argc, argv, "fp:w")) != -1)
+
+  output = stdout;
+
+  while ((opt = getopt(argc, argv, "+fo:p:w")) != -1)
     switch (opt) {
     case 'f': flat = 1; break;
     case 'p': parent = atoi(optarg); break;
+    case 'o':
+      output = fopen(optarg, "w");
+      if (!output) {
+        perror("fopen");
+        exit(1);
+      }
+      break;
     case 'w': width = CMDLINE_MAX; break;
     default: goto usage;
     }
-  
-  if (optind != argc) {
-usage:
-    fprintf(stderr, "Usage: extrace [-f] [-w] [-p PID]\n");
-    exit(1);
-  }  
 
-  setvbuf(stdout, NULL, _IONBF, 0);
+  if (parent != 1 && optind != argc) {
+usage:
+    fprintf(stderr, "Usage: extrace [-f] [-w] [-o FILE] [-p PID|CMD...]\n");
+    exit(1);
+  }
 
   sk_nl = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
   if (sk_nl == -1) {
-    printf("socket sk_nl error");
+    perror("socket sk_nl error");
     exit(1);
   }
 
   my_nla.nl_family = AF_NETLINK;
   my_nla.nl_groups = CN_IDX_PROC;
   my_nla.nl_pid = getpid();
-  
+
   kern_nla.nl_family = AF_NETLINK;
   kern_nla.nl_groups = CN_IDX_PROC;
   kern_nla.nl_pid = 1;
-  
+
   if (bind(sk_nl, (struct sockaddr *)&my_nla, sizeof my_nla) == -1) {
     perror("binding sk_nl error");
     goto close_and_exit;
@@ -198,10 +228,10 @@ usage:
   nl_hdr = (struct nlmsghdr *)buff;
   cn_hdr = (struct cn_msg *)NLMSG_DATA(nl_hdr);
   mcop_msg = (enum proc_cn_mcast_op*)&cn_hdr->data[0];
-  
+
   memset(buff, 0, sizeof buff);
   *mcop_msg = PROC_CN_MCAST_LISTEN;
-  
+
   nl_hdr->nlmsg_len = SEND_MESSAGE_LEN;
   nl_hdr->nlmsg_type = NLMSG_DONE;
   nl_hdr->nlmsg_flags = 0;
@@ -218,13 +248,34 @@ usage:
     printf("failed to send proc connector mcast ctl op!\n");
     goto close_and_exit;
   }
-  
+
   if (*mcop_msg == PROC_CN_MCAST_IGNORE) {
     rc = 0;
     goto close_and_exit;
   }
-  
-  while (1) {
+
+  if (optind != argc) {
+    pid_t child;
+
+    parent = getpid();
+    signal(SIGCHLD, sigchld);
+
+    child = fork();
+    if (child == -1) {
+      perror("fork");
+      goto close_and_exit;
+    }
+    if (child == 0) {
+      execvp(argv[optind], argv+optind);
+      perror("execvp");
+      goto close_and_exit;
+    }
+  }
+
+  signal(SIGINT, sigint);
+
+  rc = 0;
+  while (!quit) {
     memset(buff, 0, sizeof buff);
     from_nla_len = sizeof from_nla;
     nlh = (struct nlmsghdr *)buff;
