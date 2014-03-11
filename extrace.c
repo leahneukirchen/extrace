@@ -151,9 +151,9 @@ handle_msg(struct cn_msg *cn_hdr)
       r = read(fd, cmdline, sizeof cmdline);
       close(fd);
 
-      /* convert nuls (argument seperators) to spaces */
+      /* convert nuls (argument seperators) and newlines to spaces */
       for (i = 0; r > 0 && i < r; i++)
-        if (cmdline[i] == 0)
+        if (cmdline[i] == 0 || cmdline[i] == '\n')
           cmdline[i] = ' ';
     }
 
