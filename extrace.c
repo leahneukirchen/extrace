@@ -7,7 +7,7 @@
  * default: show all exec(), globally
  * -p PID   only show exec() descendant of PID
  * CMD...   run CMD... and only show exec() descendant of it
- * -o FILE  log to FILE instead of standard output
+ * -o FILE  log to FILE instead of standard output (implies -w)
  * -w       wide output: show full command line
  * -f       flat output: no indentation
  *
@@ -181,7 +181,7 @@ main(int argc, char *argv[])
 
   if (getenv("COLUMNS"))
     width = atoi(getenv("COLUMNS"));
-  if (width == 0)
+  if (width <= 0)
     width = 80;
 
   output = stdout;
@@ -196,7 +196,7 @@ main(int argc, char *argv[])
         perror("fopen");
         exit(1);
       }
-      break;
+      /* FALLTROUGH */
     case 'w': width = CMDLINE_MAX; break;
     default: goto usage;
     }
