@@ -1,4 +1,4 @@
-CFLAGS=-Wall -pedantic
+CFLAGS=-Wall -pedantic -ansi
 
 all: extrace
 
