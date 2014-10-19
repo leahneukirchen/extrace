@@ -3,8 +3,9 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep pwait".
  *
- * Usage: pwait [-v] PID...
+ * Usage: pwait [-v] [-c] PID...
  * -v  Print the exit status when each process terminates.
+ * -c  Check for PIDs to exit successfully, else return 111.
  *
  * Copyright (C) 2014 Christian Neukirchen <chneukirchen@gmail.com>
  *
@@ -149,11 +150,13 @@ main(int argc, char *argv[])
 	pid_t pid;
 	char *end;
 	int verbose = 0;
+	int check = 0;
 	int seen = 0;
 	int rc = -1;
 
-	while ((opt = getopt(argc, argv, "+v")) != -1)
+	while ((opt = getopt(argc, argv, "+cv")) != -1)
 		switch (opt) {
+		case 'c': check = 1; break;
 		case 'v': verbose = 1; break;
 		default: goto usage;
 		}
@@ -163,7 +166,7 @@ main(int argc, char *argv[])
 
 	if (argc == 0) {
 usage:
-		fprintf(stderr, "Usage: pwait [-v] PID...\n");
+		fprintf(stderr, "Usage: pwait [-v] [-c] PID...\n");
 		exit(1);
 	}
 
@@ -263,6 +266,10 @@ usage:
 							display(pid, status);
 						pids[n] = 0;
 						seen = 1;
+						if (check && rc == 0 &&
+						    (!WIFEXITED(status) ||
+						    WEXITSTATUS(status) != 0))
+							rc = 111;
 					}
 			}
 			
