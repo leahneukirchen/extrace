@@ -1,9 +1,9 @@
 CFLAGS=-Wall -pedantic -ansi
 
-all: extrace
+all: extrace pwait
 
 cap: extrace
-	sudo setcap cap_net_admin+ep extrace
+	sudo setcap cap_net_admin+ep extrace cap_net_admin+ep pwait
 
 clean:
-	rm -f extrace
+	rm -f extrace pwait
