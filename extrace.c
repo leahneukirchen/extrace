@@ -80,7 +80,7 @@
 #define BUFF_SIZE (max(max(SEND_MESSAGE_SIZE, RECV_MESSAGE_SIZE), 1024))
 #define MIN_RECV_SIZE (min(SEND_MESSAGE_SIZE, RECV_MESSAGE_SIZE))
 
-#define CMDLINE_MAX 1024
+#define CMDLINE_MAX 32768
 pid_t parent = 1;
 int width = 80;
 int flat = 0;
