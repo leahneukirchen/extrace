@@ -3,7 +3,7 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep extrace".
  *
- * Usage: extrace [-f] [-w] [-o FILE] [-p PID|CMD...]
+ * Usage: extrace [-d] [-f] [-w] [-o FILE] [-p PID|CMD...]
  * default: show all exec(), globally
  * -p PID   only show exec() descendant of PID
  * CMD...   run CMD... and only show exec() descendant of it
@@ -11,6 +11,7 @@
  * -w       wide output: show full command line
  * -f       flat output: no indentation
  * -l       print full path of argv[0]
+ * -d       print cwd of process
  * -q       don't print exec() arguments
  *
  * Copyright (C) 2014 Christian Neukirchen <chneukirchen@gmail.com>
@@ -87,6 +88,7 @@ int flat = 0;
 int run = 0;
 int full_path = 0;
 int show_args = 1;
+int show_cwd = 0;
 FILE *output;
 sig_atomic_t quit = 0;
 
@@ -138,9 +140,10 @@ handle_msg(struct cn_msg *cn_hdr)
   char cmdline[CMDLINE_MAX], name[PATH_MAX];
   char buf[CMDLINE_MAX];
   char exe[PATH_MAX];
+  char cwd[PATH_MAX];
   char *argvrest;
 
-  int r = 0, r2 = 0, fd, i, d;
+  int r = 0, r2 = 0, r3 = 0, fd, i, d;
   struct proc_event *ev = (struct proc_event *)cn_hdr->data;
 
   if (ev->what == PROC_EVENT_EXEC) {
@@ -172,16 +175,26 @@ handle_msg(struct cn_msg *cn_hdr)
           cmdline[i] = ' ';
     }
 
+    if (show_cwd) {
+      snprintf(name, sizeof name, "/proc/%d/cwd",
+               ev->event_data.exec.process_pid);
+      r3 = readlink(name, cwd, sizeof cwd);
+      if (r3 > 0)
+        cwd[r3] = 0;
+    }
+
     if (full_path && r2 > 0)
       snprintf(buf, min(sizeof buf, width+1),
-               "%*s%d %s%s", flat ? 0 : 2*d, "",
+               "%*s%d %s%s%s%s", flat ? 0 : 2*d, "",
                ev->event_data.exec.process_pid,
+               show_cwd ? cwd : "", show_cwd ? " % " : "",
                exe,
                argvrest);
     else
       snprintf(buf, min(sizeof buf, width+1),
-               "%*s%d %s", flat ? 0 : 2*d, "",
+               "%*s%d %s%s%s", flat ? 0 : 2*d, "",
                ev->event_data.exec.process_pid,
+               show_cwd ? cwd : "", show_cwd ? " % " : "",
                cmdline);
     fprintf(output, "%s\n", buf);
     fflush(output);
@@ -208,8 +221,9 @@ main(int argc, char *argv[])
 
   output = stdout;
 
-  while ((opt = getopt(argc, argv, "+flo:p:qw")) != -1)
+  while ((opt = getopt(argc, argv, "+dflo:p:qw")) != -1)
     switch (opt) {
+    case 'd': show_cwd = 1; break;
     case 'f': flat = 1; break;
     case 'l': full_path = 1; break;
     case 'p': parent = atoi(optarg); break;
@@ -227,7 +241,7 @@ main(int argc, char *argv[])
 
   if (parent != 1 && optind != argc) {
 usage:
-    fprintf(stderr, "Usage: extrace [-flwq] [-o FILE] [-p PID|CMD...]\n");
+    fprintf(stderr, "Usage: extrace [-dflwq] [-o FILE] [-p PID|CMD...]\n");
     exit(1);
   }
 
