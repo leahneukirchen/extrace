@@ -206,8 +206,10 @@ handle_msg(struct cn_msg *cn_hdr)
     if (!flat)
       fprintf(output, "%*s", 2*d, "");
     fprintf(output, "%d ", ev->event_data.exec.process_pid);
-    if (show_cwd)
-      fprintf(output, "%s %% ", cwd);
+    if (show_cwd) {
+      print_shquoted(cwd);
+      fprintf(output, " %% ");
+    }
 
     if (full_path)
       print_shquoted(exe);
