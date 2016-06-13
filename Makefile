@@ -9,6 +9,9 @@ MANDIR=$(PREFIX)/share/man
 
 all: $(ALL)
 
+README: extrace.1
+	mandoc -Tutf8 $< | col -bx >$@
+
 cap: $(ALL)
 	sudo setcap cap_net_admin+ep extrace cap_net_admin+ep pwait
 

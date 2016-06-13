@@ -1,0 +1,69 @@
+EXTRACE(1)                  General Commands Manual                 EXTRACE(1)
+
+NAME
+     extrace – trace exec() calls system-wide
+
+SYNOPSIS
+     extrace [-deflq] [-o file] [-p pid | cmd ...]
+
+DESCRIPTION
+     extrace traces all program executions occurring on a system.
+
+     The options are as follows:
+
+     -d      Print the current working directory of the new process.
+
+     -e      Print environment of process, or ‘-’ if unreadable.
+
+     -f      Generate flat output without indentation.  By default, the line
+             indentation reflects the process hierarchy.
+
+     -l      Resolve full path of the executable.  By default, argv[0] is
+             shown.
+
+     -q      Suppress printing of exec(3) arguments.
+
+     -o file
+             Redirect trace output to file.
+
+     -p pid  Only trace exec(3) calls descendant of pid.
+
+     cmd ...
+             Run cmd ... and only trace descendants of this command.
+
+             By default, all exec(3) calls are traced globally.
+
+EXIT STATUS
+     The extrace utility exits 0 on success, and >0 if an error occurs.
+
+ERRORS
+     Check these prerequisites if you see this error:
+
+           binding sk_nl error: Operation not permitted
+
+     extrace requires special permissions to run, either root or the Linux
+     CAP_NET_ADMIN capability.
+
+     extrace only works on Linux kernels with the kernel options
+
+           CONFIG_CONNECTOR=y
+           CONFIG_PROC_EVENTS=y
+
+SEE ALSO
+     fatrace(1), ps(1), pwait(1)
+
+AUTHORS
+     Christian Neukirchen <chneukirchen@gmail.com>
+
+     May contain traces of code from Guillaume Thouvenin, Matt Helsley, and
+     Sebastian Krahmer.
+
+BUGS
+     While process tracing is exact, looking up all information is inherently
+     sensitive to race conditions.  In doubt, you can only trust the PID was
+     written correctly.
+
+LICENSE
+     extrace is licensed under the terms of the GPLv2.
+
+Linux 4.6.2_1                    June 13, 2016                   Linux 4.6.2_1
