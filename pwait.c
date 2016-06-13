@@ -7,7 +7,7 @@
  * -v  Print the exit status when each process terminates.
  * -c  Check for PIDs to exit successfully, else return 111.
  *
- * Copyright (C) 2014 Christian Neukirchen <chneukirchen@gmail.com>
+ * Copyright (C) 2014-2016 Christian Neukirchen <chneukirchen@gmail.com>
  *
  * hacked from sources of:
  */
@@ -113,6 +113,7 @@ sig_atomic_t quit = 0;
 static void
 sigint(int sig)
 {
+	(void)sig;
 	quit = 1;
 }
 
