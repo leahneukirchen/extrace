@@ -3,12 +3,11 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep extrace".
  *
- * Usage: extrace [-d] [-f] [-w] [-o FILE] [-p PID|CMD...]
+ * Usage: extrace [-d] [-f] [-o FILE] [-p PID|CMD...]
  * default: show all exec(), globally
  * -p PID   only show exec() descendant of PID
  * CMD...   run CMD... and only show exec() descendant of it
- * -o FILE  log to FILE instead of standard output (implies -w)
- * -w       wide output: show full command line
+ * -o FILE  log to FILE instead of standard output
  * -f       flat output: no indentation
  * -l       print full path of argv[0]
  * -d       print cwd of process
@@ -83,7 +82,6 @@
 
 #define CMDLINE_MAX 32768
 pid_t parent = 1;
-int width = 80;
 int flat = 0;
 int run = 0;
 int full_path = 0;
@@ -184,14 +182,14 @@ handle_msg(struct cn_msg *cn_hdr)
     }
 
     if (full_path && r2 > 0)
-      snprintf(buf, min(sizeof buf, width+1),
+      fprintf(output,
                "%*s%d %s%s%s%s", flat ? 0 : 2*d, "",
                ev->event_data.exec.process_pid,
                show_cwd ? cwd : "", show_cwd ? " % " : "",
                exe,
                argvrest);
     else
-      snprintf(buf, min(sizeof buf, width+1),
+      fprintf(output,
                "%*s%d %s%s%s", flat ? 0 : 2*d, "",
                ev->event_data.exec.process_pid,
                show_cwd ? cwd : "", show_cwd ? " % " : "",
@@ -214,11 +212,6 @@ main(int argc, char *argv[])
   size_t recv_len = 0;
   int rc = -1, opt;
 
-  if (getenv("COLUMNS"))
-    width = atoi(getenv("COLUMNS"));
-  if (width <= 0)
-    width = 80;
-
   output = stdout;
 
   while ((opt = getopt(argc, argv, "+dflo:p:qw")) != -1)
@@ -234,8 +227,8 @@ main(int argc, char *argv[])
         perror("fopen");
         exit(1);
       }
-      /* FALLTROUGH */
-    case 'w': width = CMDLINE_MAX; break;
+      break;
+    case 'w': /* obsoleted, ignore */; break;
     default: goto usage;
     }
 
