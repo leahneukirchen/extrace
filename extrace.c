@@ -133,6 +133,30 @@ sigchld(int sig)
 }
 
 static void
+print_shquoted(const char *s)
+{
+  if (*s && !strpbrk(s,
+                     "\001\002\003\004\005\006\007\010"
+                     "\011\012\013\014\015\016\017\020"
+                     "\021\022\023\024\025\026\027\030"
+                     "\031\032\033\034\035\036\037\040"
+                     "`^#*[]=|\\?${}()'\"<>&;\177")) {
+    fprintf(output, "%s", s);
+    return;
+  }
+
+  putc('\'', output);
+  for (; *s; s++)
+    if (*s == '\'')
+      fprintf(output, "'\\''");
+    else if (*s == '\n')
+      fprintf(output, "'$'\\n''");
+    else
+      putc(*s, output);
+  putc('\'', output);
+}
+
+static void
 handle_msg(struct cn_msg *cn_hdr)
 {
   char cmdline[CMDLINE_MAX], name[PATH_MAX];
@@ -157,19 +181,18 @@ handle_msg(struct cn_msg *cn_hdr)
       r = read(fd, cmdline, sizeof cmdline);
       close(fd);
 
+      if (r > 0)
+        cmdline[r] = 0;
+
       if (full_path) {
         snprintf(name, sizeof name, "/proc/%d/exe",
                  ev->event_data.exec.process_pid);
         r2 = readlink(name, exe, sizeof exe);
         if (r2 > 0)
           exe[r2] = 0;
-        argvrest = strchr(cmdline, 0);
       }
 
-      /* convert nuls (argument seperators) and newlines to spaces */
-      for (i = 0; show_args && r > 0 && i < r-1; i++)
-        if (cmdline[i] == 0 || cmdline[i] == '\n')
-          cmdline[i] = ' ';
+      argvrest = strchr(cmdline, 0) + 1;
     }
 
     if (show_cwd) {
@@ -180,15 +203,28 @@ handle_msg(struct cn_msg *cn_hdr)
         cwd[r3] = 0;
     }
 
-    fprintf(output,
-            "%*s%d %s%s%s", flat ? 0 : 2*d, "",
-            ev->event_data.exec.process_pid,
-            show_cwd ? cwd : "", show_cwd ? " % " : "",
-            exe);
-    if (full_path && r2 > 0)
-      fprintf(output, "%s", argvrest);
+    if (!flat)
+      fprintf(output, "%*s", 2*d, "");
+    fprintf(output, "%d ", ev->event_data.exec.process_pid);
+    if (show_cwd)
+      fprintf(output, "%s %% ", cwd);
+
+    if (full_path)
+      print_shquoted(exe);
     else
-      fprintf(output, "%s", cmdline);
+      print_shquoted(cmdline);
+
+    if (show_args && r > 0) {
+      while (argvrest - cmdline < r) {
+        putc(' ', output);
+        print_shquoted(argvrest);
+        argvrest = strchr(argvrest, 0)+1;
+      }
+    }
+
+    if (r == sizeof cmdline)
+      fprintf(output, "... <truncated>");
+
     fprintf(output, "\n");
     fflush(output);
   }
