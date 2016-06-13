@@ -169,14 +169,14 @@ handle_msg(struct cn_msg *cn_hdr)
 
   int r = 0, r2 = 0, r3 = 0, fd, d;
   struct proc_event *ev = (struct proc_event *)cn_hdr->data;
+  pid_t pid = ev->event_data.exec.process_pid;
 
   if (ev->what == PROC_EVENT_EXEC) {
-    d = pid_depth(ev->event_data.exec.process_pid);
+    d = pid_depth(pid);
     if (d < 0)
       return;
 
-    snprintf(name, sizeof name, "/proc/%d/cmdline",
-             ev->event_data.exec.process_pid);
+    snprintf(name, sizeof name, "/proc/%d/cmdline", pid);
 
     memset(&cmdline, 0, sizeof cmdline);
     fd = open(name, O_RDONLY);
@@ -188,8 +188,7 @@ handle_msg(struct cn_msg *cn_hdr)
         cmdline[r] = 0;
 
       if (full_path) {
-        snprintf(name, sizeof name, "/proc/%d/exe",
-                 ev->event_data.exec.process_pid);
+        snprintf(name, sizeof name, "/proc/%d/exe", pid);
         r2 = readlink(name, exe, sizeof exe);
         if (r2 > 0)
           exe[r2] = 0;
@@ -199,8 +198,7 @@ handle_msg(struct cn_msg *cn_hdr)
     }
 
     if (show_cwd) {
-      snprintf(name, sizeof name, "/proc/%d/cwd",
-               ev->event_data.exec.process_pid);
+      snprintf(name, sizeof name, "/proc/%d/cwd", pid);
       r3 = readlink(name, cwd, sizeof cwd);
       if (r3 > 0)
         cwd[r3] = 0;
@@ -208,7 +206,7 @@ handle_msg(struct cn_msg *cn_hdr)
 
     if (!flat)
       fprintf(output, "%*s", 2*d, "");
-    fprintf(output, "%d ", ev->event_data.exec.process_pid);
+    fprintf(output, "%d ", pid);
     if (show_cwd) {
       print_shquoted(cwd);
       fprintf(output, " %% ");
