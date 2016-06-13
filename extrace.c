@@ -101,7 +101,8 @@ pid_depth(pid_t pid)
   snprintf(name, sizeof name, "/proc/%d/stat", pid);
 
   if ((f = fopen(name, "r"))) {
-    fscanf(f, "%*d (%*[^)]) %*c %d", &ppid);
+    if (fscanf(f, "%*d (%*[^)]) %*c %d", &ppid) < 0)
+      ppid = 0;
     fclose(f);
   }
 
