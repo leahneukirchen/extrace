@@ -13,7 +13,7 @@
  * -d       print cwd of process
  * -q       don't print exec() arguments
  *
- * Copyright (C) 2014 Christian Neukirchen <chneukirchen@gmail.com>
+ * Copyright (C) 2014-2016 Christian Neukirchen <chneukirchen@gmail.com>
  *
  * hacked from sources of:
  */
