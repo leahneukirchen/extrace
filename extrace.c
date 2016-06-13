@@ -136,7 +136,6 @@ static void
 handle_msg(struct cn_msg *cn_hdr)
 {
   char cmdline[CMDLINE_MAX], name[PATH_MAX];
-  char buf[CMDLINE_MAX];
   char exe[PATH_MAX];
   char cwd[PATH_MAX];
   char *argvrest;
@@ -181,20 +180,16 @@ handle_msg(struct cn_msg *cn_hdr)
         cwd[r3] = 0;
     }
 
+    fprintf(output,
+            "%*s%d %s%s%s", flat ? 0 : 2*d, "",
+            ev->event_data.exec.process_pid,
+            show_cwd ? cwd : "", show_cwd ? " % " : "",
+            exe);
     if (full_path && r2 > 0)
-      fprintf(output,
-               "%*s%d %s%s%s%s", flat ? 0 : 2*d, "",
-               ev->event_data.exec.process_pid,
-               show_cwd ? cwd : "", show_cwd ? " % " : "",
-               exe,
-               argvrest);
+      fprintf(output, "%s", argvrest);
     else
-      fprintf(output,
-               "%*s%d %s%s%s", flat ? 0 : 2*d, "",
-               ev->event_data.exec.process_pid,
-               show_cwd ? cwd : "", show_cwd ? " % " : "",
-               cmdline);
-    fprintf(output, "%s\n", buf);
+      fprintf(output, "%s", cmdline);
+    fprintf(output, "\n");
     fflush(output);
   }
 }
