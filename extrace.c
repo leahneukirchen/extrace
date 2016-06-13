@@ -121,12 +121,14 @@ pid_depth(pid_t pid)
 static void
 sigint(int sig)
 {
+  (void)sig;
   quit = 1;
 }
 
 static void
 sigchld(int sig)
 {
+  (void)sig;
   while (waitpid(-1, NULL, WNOHANG) > 0)
     ;
   quit = 1;
@@ -164,7 +166,7 @@ handle_msg(struct cn_msg *cn_hdr)
   char cwd[PATH_MAX];
   char *argvrest;
 
-  int r = 0, r2 = 0, r3 = 0, fd, i, d;
+  int r = 0, r2 = 0, r3 = 0, fd, d;
   struct proc_event *ev = (struct proc_event *)cn_hdr->data;
 
   if (ev->what == PROC_EVENT_EXEC) {

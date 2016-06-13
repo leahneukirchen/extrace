@@ -1,4 +1,4 @@
-CFLAGS=-Wall -pedantic -ansi
+CFLAGS=-g -O2 -Wall -Wno-switch -Wextra -Wwrite-strings -pedantic -ansi
 
 all: extrace pwait
 
