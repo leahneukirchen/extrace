@@ -3,14 +3,15 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep extrace".
  *
- * Usage: extrace [-d] [-f] [-o FILE] [-p PID|CMD...]
+ * Usage: extrace [-deflq] [-o FILE] [-p PID|CMD...]
  * default: show all exec(), globally
  * -p PID   only show exec() descendant of PID
  * CMD...   run CMD... and only show exec() descendant of it
  * -o FILE  log to FILE instead of standard output
+ * -d       print cwd of process
+ * -e       print environment of process
  * -f       flat output: no indentation
  * -l       print full path of argv[0]
- * -d       print cwd of process
  * -q       don't print exec() arguments
  *
  * Copyright (C) 2014-2016 Christian Neukirchen <chneukirchen@gmail.com>
@@ -87,6 +88,7 @@ int run = 0;
 int full_path = 0;
 int show_args = 1;
 int show_cwd = 0;
+int show_env = 0;
 FILE *output;
 sig_atomic_t quit = 0;
 
@@ -228,6 +230,33 @@ handle_msg(struct cn_msg *cn_hdr)
     if (r == sizeof cmdline)
       fprintf(output, "... <truncated>");
 
+    if (show_env) {
+      FILE *env;
+      fprintf(output, "  ");
+      snprintf(name, sizeof name, "/proc/%d/environ", pid);
+      if ((env = fopen(name, "r"))) {
+        char *line = 0, *eq = 0;
+        size_t linelen = 0;
+        while (getdelim(&line, &linelen, '\0', env) >= 0) {
+          putc(' ', output);
+          if ((eq = strchr(line, '='))) {
+            /* print split so = doesn't trigger escaping.  */
+            *eq = 0;
+            print_shquoted(line);
+            putc('=', output);
+            print_shquoted(eq+1);
+          } else {
+            /* weird env entry without equal sign.  */
+            print_shquoted(line);
+          }
+        }
+        free(line);
+        fclose(env);
+      } else {
+        fprintf(output, " -");
+      }
+    }
+
     fprintf(output, "\n");
     fflush(output);
   }
@@ -248,9 +277,10 @@ main(int argc, char *argv[])
 
   output = stdout;
 
-  while ((opt = getopt(argc, argv, "+dflo:p:qw")) != -1)
+  while ((opt = getopt(argc, argv, "+deflo:p:qw")) != -1)
     switch (opt) {
     case 'd': show_cwd = 1; break;
+    case 'e': show_env = 1; break;
     case 'f': flat = 1; break;
     case 'l': full_path = 1; break;
     case 'p': parent = atoi(optarg); break;

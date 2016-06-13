@@ -6,7 +6,7 @@
 .Nd trace exec() calls system-wide
 .Sh SYNOPSIS
 .Nm
-.Op Fl dflq
+.Op Fl deflq
 .Op Fl o Ar file
 .Op Fl p Ar pid | cmd\ ...
 .Sh DESCRIPTION
@@ -17,6 +17,10 @@ The options are as follows:
 .Bl -tag -width Ds
 .It Fl d
 Print the current working directory of the new process.
+.It Fl e
+Print environment of process, or
+.Sq Li -
+if unreadable.
 .It Fl f
 Generate flat output without indentation.
 By default, the line indentation reflects the process hierarchy.
