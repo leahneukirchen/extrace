@@ -1,0 +1,57 @@
+.Dd June 13, 2016
+.Dt PWAIT 1
+.Os
+.Sh NAME
+.Nm pwait
+.Nd wait for processes to terminate
+.Sh SYNOPSIS
+.Nm
+.Op Fl v
+.Op Fl c
+.Ar pid\ ...
+.Sh DESCRIPTION
+.Nm pwait
+waits until each of the given processes has terminated.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl v
+Print the exit status when each process terminates.
+.It Fl c
+Return 111 if any process exited non-successfully.
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh ERRORS
+Check these prerequisites if you see this error:
+.Bd -literal -offset Ds
+binding sk_nl error: Operation not permitted
+.Ed
+.Pp
+.Nm
+requires special permissions to run, either root or the Linux
+.Li "CAP_NET_ADMIN"
+capability.
+.Pp
+.Nm
+only works on Linux kernels with the kernel options
+.Bd -literal -offset Ds
+CONFIG_CONNECTOR=y
+CONFIG_PROC_EVENTS=y
+.Ed
+.Sh SEE ALSO
+.Xr extrace 1 ,
+.Xr kill 1 ,
+.Xr pkill 1 ,
+.Xr ps 1 ,
+.Xr wait 1
+.Sh AUTHORS
+.An Christian Neukirchen Aq Mt chneukirchen@gmail.com
+.Pp
+Built upon code from
+.Fx
+.Nm
+written by Jilles Tjoelker.
+.Sh LICENSE
+.Nm
+is licensed under the terms of the GPLv2.
