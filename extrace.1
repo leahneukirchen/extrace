@@ -1,0 +1,85 @@
+.Dd June 13, 2016
+.Dt EXTRACE 1
+.Os
+.Sh NAME
+.Nm extrace
+.Nd trace exec() calls system-wide
+.Sh SYNOPSIS
+.Nm
+.Op Fl dflq
+.Op Fl o Ar file
+.Op Fl p Ar pid | cmd\ ...
+.Sh DESCRIPTION
+.Nm
+traces all program executions occurring on a system.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl d
+Print the current working directory of the new process.
+.It Fl f
+Generate flat output without indentation.
+By default, the line indentation reflects the process hierarchy.
+.It Fl l
+Resolve full path of the executable.
+By default,
+.Li "argv[0]"
+is shown.
+.It Fl q
+Suppress printing of
+.Xr exec 3
+arguments.
+.It Fl o Ar file
+Redirect trace output to
+.Ar file .
+.It Fl p Ar pid
+Only trace
+.Xr exec 3
+calls descendant of
+.Ar pid .
+.It Ar cmd\ ...
+Run
+.Ar cmd\ ...
+and only trace descendants of this command.
+.Pp
+By default, all
+.Xr exec 3
+calls are traced globally.
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh ERRORS
+Check these prerequisites if you see this error:
+.Bd -literal -offset Ds
+binding sk_nl error: Operation not permitted
+.Ed
+.Pp
+.Nm
+requires special permissions to run, either root or the Linux
+.Li "CAP_NET_ADMIN"
+capability.
+.Pp
+.Nm
+only works on Linux kernels with the kernel options
+.Bd -literal -offset Ds
+CONFIG_CONNECTOR=y
+CONFIG_PROC_EVENTS=y
+.Ed
+.Sh SEE ALSO
+.Xr fatrace 1 ,
+.Xr ps 1
+.Sh AUTHORS
+.An Christian Neukirchen Aq Mt chneukirchen@gmail.com
+.Pp
+May contain traces of code from
+Guillaume Thouvenin,
+Matt Helsley,
+and
+Sebastian Krahmer.
+.Sh BUGS
+While process tracing is exact, looking up all information is
+inherently sensitive to race conditions.
+In doubt, you can only trust the PID was written correctly.
+.Sh LICENSE
+.Nm
+is licensed under the terms of the GPLv2.
