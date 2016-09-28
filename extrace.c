@@ -298,7 +298,7 @@ main(int argc, char *argv[])
 
   if (parent != 1 && optind != argc) {
 usage:
-    fprintf(stderr, "Usage: extrace [-dflwq] [-o FILE] [-p PID|CMD...]\n");
+    fprintf(stderr, "Usage: extrace [-deflq] [-o FILE] [-p PID|CMD...]\n");
     exit(1);
   }
 
