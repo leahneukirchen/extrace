@@ -1,0 +1,71 @@
+/* pwait - wait for processes to terminate
+ * extrace - trace exec() calls system-wide
+ *
+ * Copyright (C) 2014-2017 Leah Neukirchen <leah@vuxu.org>
+ *
+ * hacked from sources of:
+ */
+/* FreeBSD: head/bin/pwait/pwait.c 245506 2013-01-16 18:15:25Z delphij */
+/*-
+ * Copyright (c) 2004-2009, Jilles Tjoelker
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with
+ * or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above
+ *    copyright notice, this list of conditions and the
+ *    following disclaimer.
+ * 2. Redistributions in binary form must reproduce the
+ *    above copyright notice, this list of conditions and
+ *    the following disclaimer in the documentation and/or
+ *    other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+ * OF SUCH DAMAGE.
+ */
+/* exec-notify, so you can watch your acrobat reader or vim executing "bash -c"
+ * commands ;-)
+ * Requires some 2.6.x Linux kernel with proc connector enabled.
+ *
+ * $  cc -Wall -ansi -pedantic -std=c99 exec-notify.c
+ *
+ * (C) 2007-2010 Sebastian Krahmer <krahmer@suse.de> original netlink handling
+ * stolen from an proc-connector example, copyright folows:
+ */
+/* Copyright (C) Matt Helsley, IBM Corp. 2005
+ * Derived from fcctl.c by Guillaume Thouvenin
+ * Original copyright notice follows:
+ *
+ * Copyright (C) 2005 BULL SA.
+ * Written by Guillaume Thouvenin <guillaume.thouvenin@bull.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+
