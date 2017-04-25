@@ -14,7 +14,7 @@
  * -l       print full path of argv[0]
  * -q       don't print exec() arguments
  *
- * Copyright (C) 2014-2016 Christian Neukirchen <chneukirchen@gmail.com>
+ * Copyright (C) 2014-2016 Leah Neukirchen <leah@vuxu.org>
  *
  * hacked from sources of:
  */

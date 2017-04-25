@@ -50,10 +50,10 @@ ERRORS
            CONFIG_PROC_EVENTS=y
 
 SEE ALSO
-     fatrace(1), ps(1), pwait(1)
+     fatrace(1), ps(1), pwait(1), strace(1)
 
 AUTHORS
-     Christian Neukirchen <chneukirchen@gmail.com>
+     Leah Neukirchen <leah@vuxu.org>
 
      May contain traces of code from Guillaume Thouvenin, Matt Helsley, and
      Sebastian Krahmer.
@@ -66,4 +66,4 @@ BUGS
 LICENSE
      extrace is licensed under the terms of the GPLv2.
 
-Linux 4.6.2_1                    June 13, 2016                   Linux 4.6.2_1
+Void Linux                       June 13, 2016                      Void Linux
