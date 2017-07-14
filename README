@@ -4,7 +4,7 @@ NAME
      extrace – trace exec() calls system-wide
 
 SYNOPSIS
-     extrace [-deflq] [-o file] [-p pid | cmd ...]
+     extrace [-deflqt] [-o file] [-p pid | cmd ...]
 
 DESCRIPTION
      extrace traces all program executions occurring on a system.
@@ -22,6 +22,8 @@ DESCRIPTION
              shown.
 
      -q      Suppress printing of exec(3) arguments.
+
+     -t      Also display process exit and duration.
 
      -o file
              Redirect trace output to file.

@@ -57,6 +57,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <sys/socket.h>
@@ -82,6 +83,7 @@
 #define MIN_RECV_SIZE (min(SEND_MESSAGE_SIZE, RECV_MESSAGE_SIZE))
 
 #define CMDLINE_MAX 32768
+#define CMDLINE_DB_MAX 32
 pid_t parent = 1;
 int flat = 0;
 int run = 0;
@@ -89,8 +91,17 @@ int full_path = 0;
 int show_args = 1;
 int show_cwd = 0;
 int show_env = 0;
+int show_exit = 0;
 FILE *output;
 sig_atomic_t quit = 0;
+
+#define PID_DB_SIZE 1024
+struct {
+  pid_t pid;
+  int depth;
+  struct timespec start;
+  char cmdline[CMDLINE_DB_MAX];
+} pid_db[PID_DB_SIZE];
 
 static int
 pid_depth(pid_t pid)
@@ -171,12 +182,27 @@ handle_msg(struct cn_msg *cn_hdr)
 
   int r = 0, r2 = 0, r3 = 0, fd, d;
   struct proc_event *ev = (struct proc_event *)cn_hdr->data;
-  pid_t pid = ev->event_data.exec.process_pid;
 
   if (ev->what == PROC_EVENT_EXEC) {
+    pid_t pid = ev->event_data.exec.process_pid;
+    int i = 0;
+
     d = pid_depth(pid);
     if (d < 0)
       return;
+
+    if (show_exit) {
+      for (i = 0; i < PID_DB_SIZE - 1; i++)
+        if (pid_db[i].pid == 0)
+           break;
+      if (i == PID_DB_SIZE - 1)
+        fprintf(stderr,
+          "extrace: warning pid_db of size %d overflowed\n", PID_DB_SIZE);
+
+      pid_db[i].pid = pid;
+      pid_db[i].depth = d;
+      clock_gettime(CLOCK_MONOTONIC_RAW, &pid_db[i].start);
+    }
 
     snprintf(name, sizeof name, "/proc/%d/cmdline", pid);
 
@@ -208,7 +234,13 @@ handle_msg(struct cn_msg *cn_hdr)
 
     if (!flat)
       fprintf(output, "%*s", 2*d, "");
-    fprintf(output, "%d ", pid);
+    fprintf(output, "%d", pid);
+    if (show_exit) {
+      putc('+', output);
+      strncpy(pid_db[i].cmdline, cmdline, CMDLINE_DB_MAX-1);
+      pid_db[i].cmdline[CMDLINE_DB_MAX-1] = 0;
+    }
+    putc(' ', output);
     if (show_cwd) {
       print_shquoted(cwd);
       fprintf(output, " %% ");
@@ -259,6 +291,39 @@ handle_msg(struct cn_msg *cn_hdr)
 
     fprintf(output, "\n");
     fflush(output);
+  } else if (show_exit && ev->what == PROC_EVENT_EXIT) {
+    pid_t pid = ev->event_data.exit.process_pid;
+    int i;
+
+    for (i = 0; i < PID_DB_SIZE; i++)
+      if (pid_db[i].pid == pid) {
+        struct timespec now, diff;
+
+        pid_db[i].pid = 0;
+        if (!flat)
+          fprintf(output, "%*s", 2*pid_db[i].depth, "");
+        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+        
+        if ((now.tv_nsec - pid_db[i].start.tv_nsec) < 0) {
+          diff.tv_sec = now.tv_sec - pid_db[i].start.tv_sec - 1;
+          diff.tv_nsec = 1000000000 + now.tv_nsec - pid_db[i].start.tv_nsec;
+        } else {
+          diff.tv_sec = now.tv_sec - pid_db[i].start.tv_sec;
+          diff.tv_nsec = now.tv_nsec - pid_db[i].start.tv_nsec;
+        }
+
+        fprintf(output, "%d- ", pid);
+        print_shquoted(pid_db[i].cmdline);
+        fprintf(output, " exited %s=%d time=%ld.%03lds\n",
+            ev->event_data.exit.exit_code >= 256 ? "signal" : "status",
+            ev->event_data.exit.exit_code >= 256 ?
+              ev->event_data.exit.exit_signal :
+              ev->event_data.exit.exit_code,
+            diff.tv_sec,
+            diff.tv_nsec / 1000000);
+        fflush(output);
+        break;
+      }
   }
 }
 
@@ -277,7 +342,7 @@ main(int argc, char *argv[])
 
   output = stdout;
 
-  while ((opt = getopt(argc, argv, "+deflo:p:qw")) != -1)
+  while ((opt = getopt(argc, argv, "+deflo:p:qtw")) != -1)
     switch (opt) {
     case 'd': show_cwd = 1; break;
     case 'e': show_env = 1; break;
@@ -285,6 +350,7 @@ main(int argc, char *argv[])
     case 'l': full_path = 1; break;
     case 'p': parent = atoi(optarg); break;
     case 'q': show_args = 0; break;
+    case 't': show_exit = 1; break;
     case 'o':
       output = fopen(optarg, "w");
       if (!output) {
