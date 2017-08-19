@@ -51,6 +51,14 @@
 
 #define _XOPEN_SOURCE 700
 
+#include <linux/connector.h>
+#include <linux/netlink.h>
+#include <linux/cn_proc.h>
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include <fcntl.h>
 #include <limits.h>
 #include <signal.h>
@@ -60,14 +68,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-
-#include <linux/connector.h>
-#include <linux/netlink.h>
-#include <linux/cn_proc.h>
 
 #define max(x,y) ((y)<(x)?(x):(y))
 #define min(x,y) ((y)>(x)?(x):(y))
@@ -347,7 +347,6 @@ handle_msg(struct cn_msg *cn_hdr)
 		fflush(output);
 	} else if (show_exit && ev->what == PROC_EVENT_EXIT) {
 		pid_t pid = ev->event_data.exit.process_pid;
-		struct timespec now, diff;
 		int i;
 
 		for (i = 0; i < PID_DB_SIZE; i++)
