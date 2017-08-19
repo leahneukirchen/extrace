@@ -369,8 +369,8 @@ handle_msg(struct cn_msg *cn_hdr)
 		else
 			fprintf(output, " exited status=%d",
 			    WEXITSTATUS(ev->event_data.exit.exit_code));
-		fprintf(output, " time=%.3f\n",
-		    (ev->timestamp_ns - pid_db[i].start) / 1e9 );
+		fprintf(output, " time=%.3fs\n",
+		    (ev->timestamp_ns - pid_db[i].start) / 1e9);
 		fflush(output);
 	}
 }
