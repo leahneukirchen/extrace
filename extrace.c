@@ -55,6 +55,7 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -99,7 +100,7 @@ sig_atomic_t quit = 0;
 struct {
 	pid_t pid;
 	int depth;
-	struct timespec start;
+	uint64_t start;
 	char cmdline[CMDLINE_DB_MAX];
 } pid_db[PID_DB_SIZE];
 
@@ -130,6 +131,51 @@ pid_depth(pid_t pid)
 		return -1;
 
 	return d+1;
+}
+
+static const char*
+sig2name(int sig)
+{
+	switch (sig) {
+#define X(s) case s: return #s;
+		X(SIGHUP)
+		X(SIGINT)
+		X(SIGQUIT)
+		X(SIGILL)
+		X(SIGTRAP)
+		X(SIGABRT)
+		X(SIGBUS)
+		X(SIGFPE)
+		X(SIGKILL)
+		X(SIGUSR1)
+		X(SIGSEGV)
+		X(SIGUSR2)
+		X(SIGPIPE)
+		X(SIGALRM)
+		X(SIGTERM)
+		X(SIGSTKFLT)
+		X(SIGCHLD)
+		X(SIGCONT)
+		X(SIGSTOP)
+		X(SIGTSTP)
+		X(SIGTTIN)
+		X(SIGTTOU)
+		X(SIGURG)
+		X(SIGXCPU)
+		X(SIGXFSZ)
+		X(SIGVTALRM)
+		X(SIGPROF)
+		X(SIGWINCH)
+		X(SIGPOLL)
+		X(SIGPWR)
+		X(SIGSYS)
+#undef X
+	default: {
+		static char buf[8];
+		snprintf(buf, sizeof buf, "SIG%d", sig);
+		return buf;
+	}
+	}
 }
 
 static void
@@ -232,7 +278,7 @@ handle_msg(struct cn_msg *cn_hdr)
 			
 			pid_db[i].pid = pid;
 			pid_db[i].depth = d;
-			clock_gettime(CLOCK_MONOTONIC_RAW, &pid_db[i].start);
+			pid_db[i].start = ev->timestamp_ns;
 		}
 
 		snprintf(name, sizeof name, "/proc/%d/cmdline", pid);
@@ -314,25 +360,18 @@ handle_msg(struct cn_msg *cn_hdr)
 		if (!flat)
 			fprintf(output, "%*s",
 			    2*pid_db[i].depth, "");
-		clock_gettime(CLOCK_MONOTONIC_RAW, &now);
-
-		if ((now.tv_nsec - pid_db[i].start.tv_nsec) < 0) {
-			diff.tv_sec = now.tv_sec - pid_db[i].start.tv_sec - 1;
-			diff.tv_nsec = 1000000000 + now.tv_nsec - pid_db[i].start.tv_nsec;
-		} else {
-			diff.tv_sec = now.tv_sec - pid_db[i].start.tv_sec;
-			diff.tv_nsec = now.tv_nsec - pid_db[i].start.tv_nsec;
-		}
 
 		fprintf(output, "%d- ", pid);
 		print_shquoted(pid_db[i].cmdline);
-		fprintf(output, " exited %s=%d time=%ld.%03lds\n",
-		    ev->event_data.exit.exit_code >= 256 ? "signal" : "status",
-		    ev->event_data.exit.exit_code >= 256 ?
-		    ev->event_data.exit.exit_signal :
-		    ev->event_data.exit.exit_code,
-		    diff.tv_sec,
-		    diff.tv_nsec / 1000000);
+
+		if (ev->event_data.exit.exit_code & 0x7f)
+			fprintf(output, " exited signal=%s",
+			    sig2name(ev->event_data.exit.exit_code));
+		else
+			fprintf(output, " exited status=%d",
+			    ev->event_data.exit.exit_code >> 8);
+		fprintf(output, " time=%.3f\n",
+		    (ev->timestamp_ns - pid_db[i].start) / 1e9 );
 		fflush(output);
 	}
 }
