@@ -364,12 +364,12 @@ handle_msg(struct cn_msg *cn_hdr)
 		fprintf(output, "%d- ", pid);
 		print_shquoted(pid_db[i].cmdline);
 
-		if (ev->event_data.exit.exit_code & 0x7f)
+		if (!WIFEXITED(ev->event_data.exit.exit_code))
 			fprintf(output, " exited signal=%s",
-			    sig2name(ev->event_data.exit.exit_code));
+			    sig2name(WTERMSIG(ev->event_data.exit.exit_code)));
 		else
 			fprintf(output, " exited status=%d",
-			    ev->event_data.exit.exit_code >> 8);
+			    WEXITSTATUS(ev->event_data.exit.exit_code));
 		fprintf(output, " time=%.3f\n",
 		    (ev->timestamp_ns - pid_db[i].start) / 1e9 );
 		fflush(output);
