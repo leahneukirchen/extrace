@@ -23,7 +23,7 @@ DESCRIPTION
 
      -q      Suppress printing of exec(3) arguments.
 
-     -t      Also display process exit and duration.
+     -t      Also display process exit status and duration.
 
      -o file
              Redirect trace output to file.
