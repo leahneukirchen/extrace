@@ -51,9 +51,9 @@
 
 #define _XOPEN_SOURCE 700
 
+#include <linux/cn_proc.h>
 #include <linux/connector.h>
 #include <linux/netlink.h>
-#include <linux/cn_proc.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -62,15 +62,15 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 
-#define max(x,y) ((y)<(x)?(x):(y))
-#define min(x,y) ((y)>(x)?(x):(y))
+#define max(x, y) ((y) < (x) ? (x) : (y))
+#define min(x, y) ((y) > (x) ? (x) : (y))
 
 #define SEND_MESSAGE_LEN (NLMSG_LENGTH(sizeof (struct cn_msg) + \
                                        sizeof (enum proc_cn_mcast_op)))
@@ -133,7 +133,7 @@ pid_depth(pid_t pid)
 	return d+1;
 }
 
-static const char*
+static const char *
 sig2name(int sig)
 {
 	switch (sig) {
@@ -275,7 +275,7 @@ handle_msg(struct cn_msg *cn_hdr)
 			if (i == PID_DB_SIZE - 1)
 				fprintf(stderr, "extrace: warning pid_db of "
 				    "size %d overflowed\n", PID_DB_SIZE);
-			
+
 			pid_db[i].pid = pid;
 			pid_db[i].depth = d;
 			pid_db[i].start = ev->timestamp_ns;
@@ -354,7 +354,7 @@ handle_msg(struct cn_msg *cn_hdr)
 				break;
 		if (i == PID_DB_SIZE)
 			return;
-		
+
 		pid_db[i].pid = 0;
 		if (!flat)
 			fprintf(output, "%*s",
@@ -411,10 +411,10 @@ main(int argc, char *argv[])
 		}
 
 	if (parent != 1 && optind != argc) {
-	usage:
+usage:
 		fprintf(stderr, "Usage: extrace [-deflq] [-o FILE] [-p PID|CMD...]\n");
 		exit(1);
-  }
+	}
 
 	sk_nl = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
 	if (sk_nl == -1) {
@@ -436,7 +436,7 @@ main(int argc, char *argv[])
 	}
 	nl_hdr = (struct nlmsghdr *)buff;
 	cn_hdr = (struct cn_msg *)NLMSG_DATA(nl_hdr);
-	mcop_msg = (enum proc_cn_mcast_op*)&cn_hdr->data[0];
+	mcop_msg = (enum proc_cn_mcast_op *)&cn_hdr->data[0];
 
 	memset(buff, 0, sizeof buff);
 	*mcop_msg = PROC_CN_MCAST_LISTEN;
