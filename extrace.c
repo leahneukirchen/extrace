@@ -110,7 +110,7 @@ pid_depth(pid_t pid)
 	pid_t ppid = 0;
 	FILE *f;
 	char name[PATH_MAX];
-	int d;
+	int d, i;
 
 	snprintf(name, sizeof name, "/proc/%d/stat", pid);
 
@@ -126,11 +126,16 @@ pid_depth(pid_t pid)
 	if (ppid == 0)
 		return -1;  /* a parent we are not interested in */
 
-	d = pid_depth(ppid);
+	for (i = 0; i < PID_DB_SIZE - 1; i++)
+		if (pid_db[i].pid == ppid)
+			d = pid_db[i].depth;
+	if (i == PID_DB_SIZE - 1)
+		d = pid_depth(ppid);  /* we need to recurse */
+
 	if (d == -1)
 		return -1;
 
-	return d+1;
+	return d + 1;
 }
 
 static const char *
@@ -268,7 +273,7 @@ handle_msg(struct cn_msg *cn_hdr)
 		if (d < 0)
 			return;
 
-		if (show_exit) {
+		if (show_exit || !flat) {
 			for (i = 0; i < PID_DB_SIZE - 1; i++)
 				if (pid_db[i].pid == 0)
 					break;
@@ -345,7 +350,7 @@ handle_msg(struct cn_msg *cn_hdr)
 
 		fprintf(output, "\n");
 		fflush(output);
-	} else if (show_exit && ev->what == PROC_EVENT_EXIT) {
+	} else if ((show_exit || !flat) && ev->what == PROC_EVENT_EXIT) {
 		pid_t pid = ev->event_data.exit.process_pid;
 		int i;
 
@@ -356,6 +361,10 @@ handle_msg(struct cn_msg *cn_hdr)
 			return;
 
 		pid_db[i].pid = 0;
+
+		if (!show_exit)
+			return;
+
 		if (!flat)
 			fprintf(output, "%*s",
 			    2*pid_db[i].depth, "");
