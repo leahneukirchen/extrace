@@ -95,6 +95,8 @@ int show_env = 0;
 int show_exit = 0;
 FILE *output;
 sig_atomic_t quit = 0;
+#define CPU_MAX 4096
+uint32_t last_seq[CPU_MAX];
 
 #define PID_DB_SIZE 1024
 struct {
@@ -392,7 +394,8 @@ main(int argc, char *argv[])
 	socklen_t from_nla_len;
 	char buff[BUFF_SIZE];
 	struct nlmsghdr *nl_hdr, *nlh;
-	struct cn_msg *cn_hdr;
+	struct cn_msg *cn_hdr, *cmsg;
+	struct proc_event *cproc;
 	enum proc_cn_mcast_op *mcop_msg;
 	size_t recv_len = 0;
 	int rc = -1, opt;
@@ -494,6 +497,9 @@ usage:
 
 	rc = 0;
 	while (!quit) {
+		cmsg = (struct cn_msg *)(buff + sizeof (struct nlmsghdr));
+		cproc = (struct proc_event *)(buff + sizeof (struct nlmsghdr) + sizeof (struct cn_msg));
+
 		memset(buff, 0, sizeof buff);
 		from_nla_len = sizeof from_nla;
 		nlh = (struct nlmsghdr *)buff;
@@ -502,6 +508,13 @@ usage:
 		    (struct sockaddr *)&from_nla, &from_nla_len);
 		if (from_nla.nl_pid != 0 || recv_len < 1)
 			continue;
+	
+		if (last_seq[cproc->cpu] &&
+		    cmsg->seq != last_seq[cproc->cpu] + 1)
+			fprintf(stderr,
+			    "extrace: out of order message on cpu %d\n",
+			    cproc->cpu);
+		last_seq[cproc->cpu] = cmsg->seq;
 
 		while (NLMSG_OK(nlh, recv_len)) {
 			if (nlh->nlmsg_type == NLMSG_NOOP)
