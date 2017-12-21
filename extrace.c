@@ -186,13 +186,6 @@ sig2name(int sig)
 }
 
 static void
-sigint(int sig)
-{
-	(void)sig;
-	quit = 1;
-}
-
-static void
 sigchld(int sig)
 {
 	(void)sig;
@@ -492,8 +485,6 @@ usage:
 			goto close_and_exit;
 		}
 	}
-
-	signal(SIGINT, sigint);
 
 	rc = 0;
 	while (!quit) {
