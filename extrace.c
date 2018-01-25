@@ -138,37 +138,50 @@ sig2name(int sig)
 {
 	switch (sig) {
 #define X(s) case s: return #s;
+		// Signals defined in POSIX.1-1990
 		X(SIGHUP)
 		X(SIGINT)
 		X(SIGQUIT)
 		X(SIGILL)
-		X(SIGTRAP)
 		X(SIGABRT)
-		X(SIGBUS)
 		X(SIGFPE)
 		X(SIGKILL)
-		X(SIGUSR1)
 		X(SIGSEGV)
+		X(SIGUSR1)
 		X(SIGUSR2)
 		X(SIGPIPE)
 		X(SIGALRM)
 		X(SIGTERM)
-		X(SIGSTKFLT)
+		X(SIGSEGV)
 		X(SIGCHLD)
 		X(SIGCONT)
 		X(SIGSTOP)
 		X(SIGTSTP)
 		X(SIGTTIN)
 		X(SIGTTOU)
+
+		// Signals defined in POSIX.1-2001
+		X(SIGBUS)
+		X(SIGPOLL)
+		X(SIGPROF)
+		X(SIGSYS)
+		X(SIGTRAP)
 		X(SIGURG)
+		X(SIGVTALRM)
 		X(SIGXCPU)
 		X(SIGXFSZ)
-		X(SIGVTALRM)
-		X(SIGPROF)
-		X(SIGWINCH)
-		X(SIGPOLL)
-		X(SIGPWR)
-		X(SIGSYS)
+
+		// Other signals
+#ifdef SIGSTKFLT
+		X(SIGSTKFLT)  // Stack fault on coprocessor (unused)
+#endif
+#ifdef SIGWINCH
+		X(SIGWINCH)   // Window resize signal (4.3BSD)
+#endif
+#ifdef SIGPWR
+		X(SIGPWR)     // Power failure (System V)
+#endif
+
 #undef X
 	default: {
 		static char buf[8];
