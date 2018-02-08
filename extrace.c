@@ -288,6 +288,24 @@ handle_msg(struct cn_msg *cn_hdr)
 			return;
 		}
 
+		memset(&cmdline, 0, sizeof cmdline);
+		fd = openat(proc_dir_fd, "cmdline", O_RDONLY);
+		if (fd >= 0) {
+			r = read(fd, cmdline, sizeof cmdline);
+			close(fd);
+
+			if (r > 0)
+				cmdline[r] = 0;
+
+			if (full_path) {
+				r2 = readlinkat(proc_dir_fd, "exe", exe, sizeof exe);
+				if (r2 > 0)
+					exe[r2] = 0;
+			}
+
+			argvrest = strchr(cmdline, 0) + 1;
+		}
+
 		d = pid_depth(pid);
 		if (d < 0) {
 			close(proc_dir_fd);
@@ -305,24 +323,6 @@ handle_msg(struct cn_msg *cn_hdr)
 			pid_db[i].pid = pid;
 			pid_db[i].depth = d;
 			pid_db[i].start = ev->timestamp_ns;
-		}
-
-		memset(&cmdline, 0, sizeof cmdline);
-		fd = openat(proc_dir_fd, "cmdline", O_RDONLY);
-		if (fd >= 0) {
-			r = read(fd, cmdline, sizeof cmdline);
-			close(fd);
-
-			if (r > 0)
-				cmdline[r] = 0;
-
-			if (full_path) {
-				r2 = readlinkat(proc_dir_fd, "exe", exe, sizeof exe);
-				if (r2 > 0)
-					exe[r2] = 0;
-			}
-
-			argvrest = strchr(cmdline, 0) + 1;
 		}
 
 		if (show_cwd) {
