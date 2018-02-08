@@ -106,6 +106,12 @@ struct {
 	char cmdline[CMDLINE_DB_MAX];
 } pid_db[PID_DB_SIZE];
 
+static int open_proc_dir(pid_t pid) {
+	char name[48];
+	snprintf(name, sizeof name, "/proc/%d", pid);
+	return open(name, O_DIRECTORY);
+}
+
 static int
 pid_depth(pid_t pid)
 {
@@ -219,14 +225,14 @@ print_shquoted(const char *s)
 }
 
 static void
-print_env(pid_t pid)
+print_env(int proc_dir_fd)
 {
-	char name[PATH_MAX];
+	int fd;
 	FILE *env;
 
 	fprintf(output, "  ");
-	snprintf(name, sizeof name, "/proc/%d/environ", pid);
-	if ((env = fopen(name, "r"))) {
+	fd = openat(proc_dir_fd, "environ", O_RDONLY);
+	if ((fd >= 0) && (env = fdopen(fd, "r"))) {
 		char *line = 0, *eq = 0;
 		size_t linelen = 0;
 		while (getdelim(&line, &linelen, '\0', env) >= 0) {
@@ -252,7 +258,7 @@ print_env(pid_t pid)
 static void
 handle_msg(struct cn_msg *cn_hdr)
 {
-	char cmdline[CMDLINE_MAX], name[PATH_MAX];
+	char cmdline[CMDLINE_MAX];
 	char exe[PATH_MAX];
 	char cwd[PATH_MAX];
 	char *argvrest;
@@ -263,10 +269,17 @@ handle_msg(struct cn_msg *cn_hdr)
 	if (ev->what == PROC_EVENT_EXEC) {
 		pid_t pid = ev->event_data.exec.process_pid;
 		int i = 0;
+		int proc_dir_fd = open_proc_dir(pid);
+		if (-1 == proc_dir_fd) {
+			/* TODO: warn we dropped something? */
+			return;
+		}
 
 		d = pid_depth(pid);
-		if (d < 0)
+		if (d < 0) {
+			close(proc_dir_fd);
 			return;
+		}
 
 		if (show_exit || !flat) {
 			for (i = 0; i < PID_DB_SIZE - 1; i++)
@@ -281,11 +294,9 @@ handle_msg(struct cn_msg *cn_hdr)
 			pid_db[i].start = ev->timestamp_ns;
 		}
 
-		snprintf(name, sizeof name, "/proc/%d/cmdline", pid);
-
 		memset(&cmdline, 0, sizeof cmdline);
-		fd = open(name, O_RDONLY);
-		if (fd > 0) {
+		fd = openat(proc_dir_fd, "cmdline", O_RDONLY);
+		if (fd >= 0) {
 			r = read(fd, cmdline, sizeof cmdline);
 			close(fd);
 
@@ -293,8 +304,7 @@ handle_msg(struct cn_msg *cn_hdr)
 				cmdline[r] = 0;
 
 			if (full_path) {
-				snprintf(name, sizeof name, "/proc/%d/exe", pid);
-				r2 = readlink(name, exe, sizeof exe);
+				r2 = readlinkat(proc_dir_fd, "exe", exe, sizeof exe);
 				if (r2 > 0)
 					exe[r2] = 0;
 			}
@@ -303,8 +313,7 @@ handle_msg(struct cn_msg *cn_hdr)
 		}
 
 		if (show_cwd) {
-			snprintf(name, sizeof name, "/proc/%d/cwd", pid);
-			r3 = readlink(name, cwd, sizeof cwd);
+			r3 = readlinkat(proc_dir_fd, "cwd", cwd, sizeof cwd);
 			if (r3 > 0)
 				cwd[r3] = 0;
 		}
@@ -340,8 +349,10 @@ handle_msg(struct cn_msg *cn_hdr)
 			fprintf(output, "... <truncated>");
 
 		if (show_env) {
-			print_env(pid);
+			print_env(proc_dir_fd);
 		}
+
+		close(proc_dir_fd);
 
 		fprintf(output, "\n");
 		fflush(output);
