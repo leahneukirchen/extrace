@@ -284,7 +284,9 @@ handle_msg(struct cn_msg *cn_hdr)
 		int i = 0;
 		int proc_dir_fd = open_proc_dir(pid);
 		if (proc_dir_fd < 0) {
-			/* TODO: warn we dropped something? */
+			fprintf(stderr,
+			    "extrace: process vanished before notification: pid %d\n",
+			    pid);
 			return;
 		}
 
@@ -308,6 +310,15 @@ handle_msg(struct cn_msg *cn_hdr)
 
 		d = pid_depth(pid);
 		if (d < 0) {
+			if (*cmdline) {
+				fprintf(stderr,
+				    "extrace: process vanished before we found its parent: pid %d: %s\n",
+				    pid, cmdline);
+			} else {
+				fprintf(stderr,
+				    "extrace: process vanished without a name: pid %d\n",
+				    pid);
+			}
 			close(proc_dir_fd);
 			return;
 		}
@@ -317,7 +328,7 @@ handle_msg(struct cn_msg *cn_hdr)
 				if (pid_db[i].pid == 0)
 					break;
 			if (i == PID_DB_SIZE - 1)
-				fprintf(stderr, "extrace: warning pid_db of "
+				fprintf(stderr, "extrace: warning: pid_db of "
 				    "size %d overflowed\n", PID_DB_SIZE);
 
 			pid_db[i].pid = pid;
