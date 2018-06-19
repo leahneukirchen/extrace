@@ -3,7 +3,7 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep extrace".
  *
- * Usage: extrace [-deflq] [-o FILE] [-p PID|CMD...]
+ * Usage: extrace [-deflqu] [-o FILE] [-p PID|CMD...]
  * default: show all exec(), globally
  * -p PID   only show exec() descendant of PID
  * CMD...   run CMD... and only show exec() descendant of it
@@ -13,6 +13,7 @@
  * -f       flat output: no indentation
  * -l       print full path of argv[0]
  * -q       don't print exec() arguments
+ * -u       print user of process
  *
  * Copyright (C) 2014-2018 Leah Neukirchen <leah@vuxu.org>
  *
@@ -56,11 +57,13 @@
 #include <linux/netlink.h>
 
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
 #include <fcntl.h>
 #include <limits.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -93,6 +96,7 @@ int show_args = 1;
 int show_cwd = 0;
 int show_env = 0;
 int show_exit = 0;
+int show_user = 0;
 FILE *output;
 sig_atomic_t quit = 0;
 #define CPU_MAX 4096
@@ -350,6 +354,17 @@ handle_msg(struct cn_msg *cn_hdr)
 			strncpy(pid_db[i].cmdline, cmdline, CMDLINE_DB_MAX-1);
 			pid_db[i].cmdline[CMDLINE_DB_MAX-1] = 0;
 		}
+		if (show_user) {
+			struct stat st;
+			struct passwd *p;
+
+			if (fstat(proc_dir_fd, &st) < 0)
+				st.st_uid = -1;
+			if ((p = getpwuid(st.st_uid)))
+				fprintf(output," <%s>", p->pw_name);
+			else
+				fprintf(output," <%d>", st.st_uid);
+		}
 		putc(' ', output);
 		if (show_cwd) {
 			print_shquoted(cwd);
@@ -429,7 +444,7 @@ main(int argc, char *argv[])
 
 	output = stdout;
 
-	while ((opt = getopt(argc, argv, "+deflo:p:qtw")) != -1)
+	while ((opt = getopt(argc, argv, "+deflo:p:qtwu")) != -1)
 		switch (opt) {
 		case 'd': show_cwd = 1; break;
 		case 'e': show_env = 1; break;
@@ -446,6 +461,7 @@ main(int argc, char *argv[])
 			}
 			break;
 		case 'w': /* obsoleted, ignore */; break;
+		case 'u': show_user = 1; break;
 		default: goto usage;
 		}
 

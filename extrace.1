@@ -1,4 +1,4 @@
-.Dd June 13, 2016
+.Dd June 19, 2018
 .Dt EXTRACE 1
 .Os
 .Sh NAME
@@ -6,7 +6,7 @@
 .Nd trace exec() calls system-wide
 .Sh SYNOPSIS
 .Nm
-.Op Fl deflqt
+.Op Fl deflqtu
 .Op Fl o Ar file
 .Op Fl p Ar pid | cmd\ ...
 .Sh DESCRIPTION
@@ -35,6 +35,8 @@ Suppress printing of
 arguments.
 .It Fl t
 Also display process exit status and duration.
+.It Fl u
+Also display the user running the process.
 .It Fl o Ar file
 Redirect trace output to
 .Ar file .
