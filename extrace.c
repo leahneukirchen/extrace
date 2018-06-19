@@ -61,6 +61,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <pwd.h>
@@ -121,17 +122,31 @@ static int
 pid_depth(pid_t pid)
 {
 	pid_t ppid = 0;
-	FILE *f;
 	char name[PATH_MAX];
-	int d, i;
+	char buf[2048];
+	char *s;
+	int fd, d, i;
 
 	snprintf(name, sizeof name, "/proc/%d/stat", pid);
 
-	if ((f = fopen(name, "r"))) {
-		if (fscanf(f, "%*d (%*[^)]) %*c %d", &ppid) < 0)
-			ppid = 0;
-		fclose(f);
-	}
+	if ((fd = open(name, O_RDONLY)) < 0)
+		return 0;
+	if (read(fd, buf, sizeof buf) <= 0)
+		return 0;
+	close(fd);
+
+	s = strrchr(buf, ')');  /* find end of COMM (recommended way) */
+	if (!s)
+		return 0;
+	while (*++s == ' ')
+		;
+	/* skip over STATE */
+	while (*++s == ' ')
+		;
+	errno = 0;
+	ppid = strtol(s, 0, 10);  /* parse PPID */
+	if (errno != 0)
+		return 0;
 
 	if (ppid == parent)
 		return 0;
