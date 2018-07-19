@@ -1,5 +1,10 @@
 ## HEAD
 
+## 0.6 (2018-06-19)
+
+* Add `-u` to print owner of process.
+* Improved /proc/$PID/stat parser.
+
 ## 0.5 (2018-03-23)
 
 * Detect and report out of order and lost messages.
