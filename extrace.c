@@ -443,6 +443,29 @@ handle_msg(struct cn_msg *cn_hdr)
 	}
 }
 
+static pid_t
+parse_pid(char *s)
+{
+	pid_t pid;
+	char *end;
+
+	errno = 0;
+	pid = strtol(s, &end, 10);
+	if (pid <= 0 || *end || errno != 0) {
+		fprintf(stderr, "extrace: %s: invalid process id\n", s);
+		exit(1);
+	}
+
+	errno = 0;
+	kill(pid, 0);
+	if (errno == ESRCH) {
+		fprintf(stderr, "extrace: %s: no such process\n", s);
+		exit(1);
+	}
+
+	return pid;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -465,7 +488,7 @@ main(int argc, char *argv[])
 		case 'e': show_env = 1; break;
 		case 'f': flat = 1; break;
 		case 'l': full_path = 1; break;
-		case 'p': parent = atoi(optarg); break;
+		case 'p': parent = parse_pid(optarg); break;
 		case 'q': show_args = 0; break;
 		case 't': show_exit = 1; break;
 		case 'o':

@@ -1,6 +1,7 @@
 ## HEAD
 
 * pwait: detect and warn for non-existing PID.
+* extract: detect and error for non-existing PID in `-p`.
 
 ## 0.6 (2018-06-19)
 
