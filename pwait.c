@@ -300,5 +300,6 @@ usage:
 
 close_and_exit:
 	close(sk_nl);
+	free(pids);
 	return rc;
 }
