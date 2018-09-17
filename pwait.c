@@ -146,7 +146,7 @@ main(int argc, char *argv[])
 	enum proc_cn_mcast_op *mcop_msg;
 	size_t recv_len = 0;
 	int opt;
-	int n;
+	int n, m;
 	pid_t *pids;
 	pid_t pid;
 	char *end;
@@ -177,14 +177,14 @@ usage:
 		exit(1);
 	}
 
-	for (n = 0; n < argc; n++) {
+	for (n = m = 0; n < argc; n++) {
 		errno = 0;
 		pid = strtol(argv[n], &end, 10);
 		if (pid < 0 || *end != '\0' || errno != 0) {
 			fprintf(stderr, "%s: bad process id\n", argv[n]);
 			continue;
 		}
-		pids[n] = pid;
+		pids[m++] = pid;
 	}
 
 	sk_nl = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
@@ -261,7 +261,7 @@ usage:
 				pid_t pid = ev->event_data.exit.process_pid;
 
 				seen = 0;
-				for (n = 0; n < argc; n++)
+				for (n = 0; n < m; n++)
 					if (pids[n] == pid) {
 						if (verbose && !seen)
 							display(pid, status);
@@ -280,7 +280,7 @@ usage:
 		}
 
 		quit = 1;
-		for (n = 0; n < argc; n++)
+		for (n = 0; n < m; n++)
 			if (pids[n] != 0)
 				quit = 0;
 	}
