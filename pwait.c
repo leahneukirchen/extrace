@@ -173,7 +173,7 @@ usage:
 
 	pids = calloc(argc, sizeof (pid_t));
 	if (!pids) {
-		perror("calloc");
+		perror("pwait: calloc");
 		exit(1);
 	}
 
@@ -181,13 +181,15 @@ usage:
 		errno = 0;
 		pid = strtol(argv[n], &end, 10);
 		if (pid <= 0 || *end || errno != 0) {
-			fprintf(stderr, "%s: invalid process id\n", argv[n]);
+			fprintf(stderr, "pwait: %s: invalid process id\n",
+			    argv[n]);
 			continue;
 		}
 		errno = 0;
 		kill(pid, 0);
 		if (errno == ESRCH) {
-			fprintf(stderr, "%s: no such process\n", argv[n]);
+			fprintf(stderr, "pwait: %s: no such process\n",
+			    argv[n]);
 			continue;
 		}
 
@@ -199,7 +201,7 @@ usage:
 
 	sk_nl = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
 	if (sk_nl == -1) {
-		perror("socket sk_nl error");
+		perror("pwait: socket sk_nl error");
 		exit(1);
 	}
 
@@ -212,7 +214,7 @@ usage:
 	kern_nla.nl_pid = 1;
 
 	if (bind(sk_nl, (struct sockaddr *)&my_nla, sizeof my_nla) == -1) {
-		perror("binding sk_nl error");
+		perror("pwait: binding sk_nl error");
 		goto close_and_exit;
 	}
 	nl_hdr = (struct nlmsghdr *)buff;
@@ -235,7 +237,8 @@ usage:
 	cn_hdr->len = sizeof (enum proc_cn_mcast_op);
 
 	if (send(sk_nl, nl_hdr, nl_hdr->nlmsg_len, 0) != nl_hdr->nlmsg_len) {
-		fprintf(stderr, "failed to send proc connector mcast ctl op!\n");
+		fprintf(stderr,
+		    "pwait: failed to send proc connector mcast ctl op!\n");
 		goto close_and_exit;
 	}
 
