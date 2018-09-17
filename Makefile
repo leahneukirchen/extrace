@@ -1,9 +1,9 @@
 ALL=extrace pwait
 
-CFLAGS=-g -O2 -Wall -Wno-switch -Wextra -Wwrite-strings -pedantic -ansi
+CFLAGS?=-g -O2 -Wall -Wno-switch -Wextra -Wwrite-strings -pedantic -ansi
 
 DESTDIR=
-PREFIX=/usr/local
+PREFIX?=/usr/local
 BINDIR=$(PREFIX)/bin
 MANDIR=$(PREFIX)/share/man
 
