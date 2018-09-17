@@ -180,8 +180,8 @@ usage:
 	for (n = m = 0; n < argc; n++) {
 		errno = 0;
 		pid = strtol(argv[n], &end, 10);
-		if (pid < 0 || *end != '\0' || errno != 0) {
-			fprintf(stderr, "%s: bad process id\n", argv[n]);
+		if (pid < 0 || *end || errno != 0) {
+			fprintf(stderr, "%s: invalid process id\n", argv[n]);
 			continue;
 		}
 		pids[m++] = pid;
