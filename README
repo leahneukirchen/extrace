@@ -71,3 +71,53 @@ LICENSE
      extrace is licensed under the terms of the GPLv2.
 
 Void Linux                       June 19, 2018                      Void Linux
+
+------------------------------------------------------------------------------
+
+PWAIT(1)                    General Commands Manual                   PWAIT(1)
+
+NAME
+     pwait – wait for processes to terminate
+
+SYNOPSIS
+     pwait [-v] [-c] pid ...
+
+DESCRIPTION
+     pwait waits until each of the given processes has terminated.
+
+     The options are as follows:
+
+     -v      Print the exit status when each process terminates.
+
+     -c      Return 111 if any process exited non-successfully.
+
+EXIT STATUS
+     The pwait utility exits 0 on success, and >0 if an error occurs.
+
+     Invalid pids elicit a warning message but are otherwise ignored.
+
+ERRORS
+     Check these prerequisites if you see this error:
+
+           binding sk_nl error: Operation not permitted
+
+     pwait requires special permissions to run, either root or the Linux
+     CAP_NET_ADMIN capability.
+
+     pwait only works on Linux kernels with the kernel options
+
+           CONFIG_CONNECTOR=y
+           CONFIG_PROC_EVENTS=y
+
+SEE ALSO
+     extrace(1), kill(1), pkill(1), ps(1), wait(1)
+
+AUTHORS
+     Leah Neukirchen <leah@vuxu.org>
+
+     Built upon code from FreeBSD pwait written by Jilles Tjoelker.
+
+LICENSE
+     pwait is licensed under the terms of the GPLv2.
+
+Void Linux                    September 17, 2018                    Void Linux
