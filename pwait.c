@@ -185,14 +185,6 @@ usage:
 			    argv[n]);
 			continue;
 		}
-		errno = 0;
-		kill(pid, 0);
-		if (errno == ESRCH) {
-			fprintf(stderr, "pwait: %s: no such process\n",
-			    argv[n]);
-			continue;
-		}
-
 		pids[m++] = pid;
 	}
 
@@ -246,6 +238,21 @@ usage:
 		goto close_and_exit;
 
 	signal(SIGINT, sigint);
+
+	quit = 1;
+	for (n = 0; n < m; n++) {
+		errno = 0;
+		kill(pids[n], 0);
+		if (errno == ESRCH) {
+			fprintf(stderr, "pwait: %d: no such process\n",
+			    pids[n]);
+			pids[n] = 0;
+			continue;
+		}
+		quit = 0;
+	}
+	if (quit)
+		exit(1);
 
 	rc = 0;
 	while (!quit) {
