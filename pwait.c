@@ -184,6 +184,13 @@ usage:
 			fprintf(stderr, "%s: invalid process id\n", argv[n]);
 			continue;
 		}
+		errno = 0;
+		kill(pid, 0);
+		if (errno == ESRCH) {
+			fprintf(stderr, "%s: no such process\n", argv[n]);
+			continue;
+		}
+
 		pids[m++] = pid;
 	}
 

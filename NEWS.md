@@ -1,5 +1,7 @@
 ## HEAD
 
+* pwait: detect and warn for non-existing PID.
+
 ## 0.6 (2018-06-19)
 
 * Add `-u` to print owner of process.
