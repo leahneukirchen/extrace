@@ -187,6 +187,9 @@ usage:
 		pids[m++] = pid;
 	}
 
+	if (m == 0)
+		exit(1);
+
 	sk_nl = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
 	if (sk_nl == -1) {
 		perror("socket sk_nl error");
