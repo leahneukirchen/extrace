@@ -366,8 +366,8 @@ handle_msg(struct cn_msg *cn_hdr)
 		fprintf(output, "%d", pid);
 		if (show_exit) {
 			putc('+', output);
-			strncpy(pid_db[i].cmdline, cmdline, CMDLINE_DB_MAX-1);
-			pid_db[i].cmdline[CMDLINE_DB_MAX-1] = 0;
+			snprintf(pid_db[i].cmdline, CMDLINE_DB_MAX,
+			    "%s", cmdline);
 		}
 		if (show_user) {
 			struct stat st;
