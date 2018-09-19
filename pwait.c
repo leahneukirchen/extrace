@@ -237,8 +237,6 @@ usage:
 	if (*mcop_msg == PROC_CN_MCAST_IGNORE)
 		goto close_and_exit;
 
-	signal(SIGINT, sigint);
-
 	quit = 1;
 	for (n = 0; n < m; n++) {
 		errno = 0;
@@ -253,6 +251,8 @@ usage:
 	}
 	if (quit)
 		exit(1);
+
+	signal(SIGINT, sigint);
 
 	rc = 0;
 	while (!quit) {
