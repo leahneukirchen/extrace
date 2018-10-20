@@ -587,6 +587,9 @@ usage:
 		    (struct sockaddr *)&from_nla, &from_nla_len);
 		if (from_nla.nl_pid != 0 || recv_len < 1)
 			continue;
+
+		if (cproc->what == PROC_EVENT_NONE)
+			continue;
 	
 		if (last_seq[cproc->cpu] &&
 		    cmsg->seq != last_seq[cproc->cpu] + 1)
