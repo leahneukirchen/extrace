@@ -15,7 +15,7 @@
  * -q       don't print exec() arguments
  * -u       print user of process
  *
- * Copyright (C) 2014-2018 Leah Neukirchen <leah@vuxu.org>
+ * Copyright (C) 2014-2019 Leah Neukirchen <leah@vuxu.org>
  *
  * hacked from sources of:
  */

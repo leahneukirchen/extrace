@@ -7,7 +7,7 @@
  * -v  Print the exit status when each process terminates.
  * -c  Check for PIDs to exit successfully, else return 111.
  *
- * Copyright (C) 2014-2018 Leah Neukirchen <leah@vuxu.org>
+ * Copyright (C) 2014-2019 Leah Neukirchen <leah@vuxu.org>
  *
  * hacked from sources of:
  */
