@@ -1,0 +1,131 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'etc'
+
+# TODO: -p / cmd... (how?)
+
+BPF = <<'EOF'
+tracepoint:syscalls:sys_enter_execve {
+  printf("%ld +%d %d", elapsed, pid, uid);
+  join(args->argv, "SEP1");
+  printf("SEP2\n");
+}
+tracepoint:syscalls:sys_enter_exit_group {
+  printf("%ld -%d %d\nSEP2\n", elapsed, pid, args->error_code);
+}
+EOF
+
+SEP1 = "\xff\xff\xff".b
+SEP2 = "\xff\xfe\xff".b
+
+Procc = Struct.new(:pid, :uid, :name, :args, :start_time, :ppid, :depth)
+
+PIDS = {}
+
+def pid_depth(pid)
+  procc = PIDS[pid]
+  if procc && procc.depth
+    procc.depth
+  else
+    procc = (PIDS[pid] ||= Procc.new(pid))
+    stat = File.read("/proc/#{pid}/stat").b
+    if stat =~ /.*\) . (\d+)/
+      ppid = $1.to_i
+      if ppid == 0
+        return 0
+      else
+        procc.ppid = ppid
+        procc.depth = pid_depth(ppid) + 1
+      end
+    end
+  end
+rescue Errno::ENOENT, Errno::ESRCH => e
+  puts "failed to get pid #{pid} info: #{e}"
+  0
+end
+
+def fmtcmd(c)
+  if c.empty? || c =~ /[\001-\040`^#*\[\]|\\?${}()'\"<>&;\177]/
+    "'" + c.gsub("'", "'\\''").gsub("\n", "'$'\\n''") + "'"
+  else
+    c
+  end
+end
+
+def fmtcmds(cmds)
+  cmds.map { |cmd| fmtcmd(cmd) }.join(' ')
+end
+
+params = ARGV.getopts("deflqtu")
+dflag = params['d']
+eflag = params['e']
+fflag = params['f']
+lflag = params['l']
+qflag = params['q']
+tflag = params['t']
+uflag = params['u']
+
+IO.popen(["bpftrace", "-e", BPF.gsub("SEP1", SEP1).gsub("SEP2", SEP2)],
+         "r:BINARY") { |output|
+  while line = output.gets("\n#{SEP2}\n")
+    line.chomp!("\n#{SEP2}\n")
+    case line
+    when /\A(\d+) \+(\d+) (\d+)/
+      elapsed = $1.to_i
+      pid = $2.to_i
+      uid = $3.to_i
+      comm = $'.split(SEP1)
+      
+      next  unless comm.first
+
+      PIDS[pid] = Procc.new(pid, uid, comm.first, comm[1..-1], elapsed)
+
+      print "  " * pid_depth(pid)  unless fflag
+      print pid
+      print "+"  if tflag
+      print " "
+      print "<#{Etc.getpwuid(uid).name}> "  if uflag
+      if dflag
+        print (File.readlink("/proc/#{pid}/cwd") rescue "-")
+        print " % "
+      end
+      comm[0] = (File.readlink("/proc/#{pid}/exe") rescue comm[0])  if lflag
+      if qflag
+        print fmtcmd(comm[0])
+      else
+        print fmtcmds(comm)
+      end
+      if eflag
+        print "   "
+        print (File.read("/proc/#{pid}/environ") rescue "-").
+                b.split("\x00").map { |e|
+          if e =~ /\A[a-zA-Z0-9_]+=/
+            $& + fmtcmd($')
+          else
+            fmtcmd(e)
+          end
+        }.join(" ")
+      end
+      puts
+    when /\A(\d+) -(\d+) (\d+)/
+      elapsed = $1.to_i
+      pid = $2.to_i
+      status = $3.to_i
+
+      if procc = PIDS[pid]
+        PIDS.delete(pid)
+        next  unless procc.name
+        if tflag
+          dur = (elapsed - procc.start_time) / 1e9
+          print "  " * pid_depth(pid)  unless fflag
+          puts "#{pid}- #{procc.name} exited status=#{status} time=#{"%.3f" % dur}s"
+        end
+      end
+    when /^Attaching/
+      # ignore
+    else
+      warn "can't parse #{line}"
+    end
+  end
+}
