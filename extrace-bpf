@@ -6,6 +6,9 @@ require 'etc'
 # TODO: -p / cmd... (how?)
 
 BPF = <<'EOF'
+BEGIN {
+  printf("SEP2\n");
+}
 tracepoint:syscalls:sys_enter_execve {
   printf("%ld +%d %d", elapsed, pid, uid);
   join(args->argv, "SEP1");
