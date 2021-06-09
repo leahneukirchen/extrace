@@ -3,7 +3,7 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep extrace".
  *
- * Usage: extrace [-deflqu] [-o FILE] [-p PID|CMD...]
+ * Usage: extrace [-deflqQu] [-o FILE] [-p PID|CMD...]
  * default: show all exec(), globally
  * -p PID   only show exec() descendant of PID
  * CMD...   run CMD... and only show exec() descendant of it
@@ -13,6 +13,7 @@
  * -f       flat output: no indentation
  * -l       print full path of argv[0]
  * -q       don't print exec() arguments
+ * -Q       don't print error messages
  * -u       print user of process
  *
  * Copyright (C) 2014-2019 Leah Neukirchen <leah@vuxu.org>
@@ -66,6 +67,7 @@
 #include <limits.h>
 #include <pwd.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,6 +96,7 @@ int flat = 0;
 int run = 0;
 int full_path = 0;
 int show_args = 1;
+int show_errors = 1;
 int show_cwd = 0;
 int show_env = 0;
 int show_exit = 0;
@@ -110,6 +113,16 @@ struct {
 	uint64_t start;
 	char cmdline[CMDLINE_DB_MAX];
 } pid_db[PID_DB_SIZE];
+
+static void
+print_runtime_error(const char* fmt, ...) {
+	va_list ap;
+	if (show_errors) {
+		va_start(ap, fmt);
+		vfprintf(stderr, fmt, ap);
+		va_end(ap);
+	}
+}
 
 static int
 open_proc_dir(pid_t pid) {
@@ -303,7 +316,7 @@ handle_msg(struct cn_msg *cn_hdr)
 		int i = 0;
 		int proc_dir_fd = open_proc_dir(pid);
 		if (proc_dir_fd < 0) {
-			fprintf(stderr,
+			print_runtime_error(
 			    "extrace: process vanished before notification: pid %d\n",
 			    pid);
 			return;
@@ -330,11 +343,11 @@ handle_msg(struct cn_msg *cn_hdr)
 		d = pid_depth(pid);
 		if (d < 0) {
 			if (*cmdline) {
-				fprintf(stderr,
+				print_runtime_error(
 				    "extrace: process vanished before we found its parent: pid %d: %s\n",
 				    pid, cmdline);
 			} else {
-				fprintf(stderr,
+				print_runtime_error(
 				    "extrace: process vanished without a name: pid %d\n",
 				    pid);
 			}
@@ -347,7 +360,7 @@ handle_msg(struct cn_msg *cn_hdr)
 				if (pid_db[i].pid == 0)
 					break;
 			if (i == PID_DB_SIZE - 1)
-				fprintf(stderr, "extrace: warning: pid_db of "
+				print_runtime_error("extrace: warning: pid_db of "
 				    "size %d overflowed\n", PID_DB_SIZE);
 
 			pid_db[i].pid = pid;
@@ -482,7 +495,7 @@ main(int argc, char *argv[])
 
 	output = stdout;
 
-	while ((opt = getopt(argc, argv, "+deflo:p:qtwu")) != -1)
+	while ((opt = getopt(argc, argv, "+deflo:p:qQtwu")) != -1)
 		switch (opt) {
 		case 'd': show_cwd = 1; break;
 		case 'e': show_env = 1; break;
@@ -490,6 +503,7 @@ main(int argc, char *argv[])
 		case 'l': full_path = 1; break;
 		case 'p': parent = parse_pid(optarg); break;
 		case 'q': show_args = 0; break;
+		case 'Q': show_errors = 0; break;
 		case 't': show_exit = 1; break;
 		case 'o':
 			output = fopen(optarg, "w");
@@ -505,7 +519,7 @@ main(int argc, char *argv[])
 
 	if (parent != 1 && optind != argc) {
 usage:
-		fprintf(stderr, "Usage: extrace [-deflqt] [-o FILE] [-p PID|CMD...]\n");
+		fprintf(stderr, "Usage: extrace [-deflqQt] [-o FILE] [-p PID|CMD...]\n");
 		exit(1);
 	}
 
@@ -593,7 +607,7 @@ usage:
 	
 		if (last_seq[cproc->cpu] &&
 		    cmsg->seq != last_seq[cproc->cpu] + 1)
-			fprintf(stderr,
+			print_runtime_error(
 			    "extrace: out of order message on cpu %d\n",
 			    cproc->cpu);
 		last_seq[cproc->cpu] = cmsg->seq;
