@@ -3,7 +3,7 @@
  * Requires CONFIG_CONNECTOR=y and CONFIG_PROC_EVENTS=y.
  * Requires root or "setcap cap_net_admin+ep extrace".
  *
- * Usage: extrace [-deflqQu] [-o FILE] [-p PID|CMD...]
+ * Usage: extrace [-deflqQtu] [-o FILE] [-p PID|CMD...]
  * default: show all exec(), globally
  * -p PID   only show exec() descendant of PID
  * CMD...   run CMD... and only show exec() descendant of it
@@ -519,7 +519,7 @@ main(int argc, char *argv[])
 
 	if (parent != 1 && optind != argc) {
 usage:
-		fprintf(stderr, "Usage: extrace [-deflqQt] [-o FILE] [-p PID|CMD...]\n");
+		fprintf(stderr, "Usage: extrace [-deflqQtu] [-o FILE] [-p PID|CMD...]\n");
 		exit(1);
 	}
 
