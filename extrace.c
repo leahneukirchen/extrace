@@ -140,6 +140,9 @@ pid_depth(pid_t pid)
 	char *s;
 	int fd, d, i;
 
+	if (pid == 1)
+		return 0;
+
 	snprintf(name, sizeof name, "/proc/%d/stat", pid);
 
 	if ((fd = open(name, O_RDONLY)) < 0)
