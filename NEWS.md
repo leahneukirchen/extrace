@@ -1,3 +1,8 @@
+## 0.8 (2021-08-05)
+
+* extrace: add option -Q to suppress runtime errors.
+* Small fixes.
+
 ## 0.7 (2019-02-08)
 
 * pwait: detect and warn for non-existing PID.
