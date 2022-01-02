@@ -140,7 +140,7 @@ pid_depth(pid_t pid)
 	char *s;
 	int fd, d, i;
 
-	if (pid == 1)
+	if (pid == 1 && parent == 1)
 		return 0;
 
 	snprintf(name, sizeof name, "/proc/%d/stat", pid);
@@ -345,14 +345,16 @@ handle_msg(struct cn_msg *cn_hdr)
 
 		d = pid_depth(pid);
 		if (d < 0) {
-			if (*cmdline) {
-				print_runtime_error(
-				    "extrace: process vanished before we found its parent: pid %d: %s\n",
-				    pid, cmdline);
-			} else {
-				print_runtime_error(
-				    "extrace: process vanished without a name: pid %d\n",
-				    pid);
+			if (parent == 1) {
+				if (*cmdline) {
+					print_runtime_error(
+					    "extrace: process vanished before we found its parent: pid %d: %s\n",
+					    pid, cmdline);
+				} else {
+					print_runtime_error(
+					    "extrace: process vanished without a name: pid %d\n",
+					    pid);
+				}
 			}
 			close(proc_dir_fd);
 			return;
