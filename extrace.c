@@ -362,11 +362,20 @@ handle_msg(struct cn_msg *cn_hdr)
 
 		if (show_exit || !flat) {
 			for (i = 0; i < PID_DB_SIZE - 1; i++)
-				if (pid_db[i].pid == 0)
+				if (pid_db[i].pid == 0 || pid_db[i].pid == pid)
 					break;
 			if (i == PID_DB_SIZE - 1)
 				print_runtime_error("extrace: warning: pid_db of "
 				    "size %d overflowed\n", PID_DB_SIZE);
+
+			if (show_exit && pid_db[i].pid == pid) {
+				if (!flat)
+					fprintf(output, "%*s", 2*d, "");
+				fprintf(output, "%d- %s execed time=%.3fs\n",
+				    pid,
+				    pid_db[i].cmdline,
+				    (ev->timestamp_ns - pid_db[i].start) / 1e9);
+			}
 
 			pid_db[i].pid = pid;
 			pid_db[i].depth = d;
