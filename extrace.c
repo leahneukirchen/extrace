@@ -440,6 +440,9 @@ handle_msg(struct cn_msg *cn_hdr)
 		pid_t pid = ev->event_data.exit.process_pid;
 		int i;
 
+		if (pid == parent)
+			quit = 1;
+
 		for (i = 0; i < PID_DB_SIZE; i++)
 			if (pid_db[i].pid == pid)
 				break;
