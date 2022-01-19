@@ -1,3 +1,10 @@
+## 0.9 (2022-01-19)
+
+* With `-t`, print time when process execed.
+* Fix `-p` flag, which was a regression in 0.8.
+* Quit when parent specified in `-p` exits.
+* Fix likely root cause for pid_db overflow.
+
 ## 0.8 (2021-08-05)
 
 * extrace: add option -Q to suppress runtime errors.
