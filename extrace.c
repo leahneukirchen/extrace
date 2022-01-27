@@ -102,7 +102,7 @@ int show_env = 0;
 int show_exit = 0;
 int show_user = 0;
 FILE *output;
-sig_atomic_t quit = 0;
+volatile sig_atomic_t quit = 0;
 #define CPU_MAX 4096
 uint32_t last_seq[CPU_MAX];
 
