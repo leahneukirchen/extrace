@@ -92,6 +92,7 @@
 #define CMDLINE_MAX 32768
 #define CMDLINE_DB_MAX 32
 pid_t parent = 1;
+pid_t child;
 int flat = 0;
 int run = 0;
 int full_path = 0;
@@ -242,10 +243,16 @@ sig2name(int sig)
 static void
 sigchld(int sig)
 {
+        int old_errno = errno;
+	pid_t pid;
+
 	(void)sig;
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		;
-	quit = 1;
+
+	while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
+		if (pid == child)
+			quit = 1;
+
+	errno = old_errno;
 }
 
 static void
@@ -588,8 +595,6 @@ usage:
 	}
 
 	if (optind != argc) {
-		pid_t child;
-
 		parent = getpid();
 		signal(SIGCHLD, sigchld);
 
