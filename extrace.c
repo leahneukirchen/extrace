@@ -393,6 +393,10 @@ handle_msg(struct cn_msg *cn_hdr)
 			r3 = readlinkat(proc_dir_fd, "cwd", cwd, sizeof cwd);
 			if (r3 > 0)
 				cwd[r3] = 0;
+			else if (errno == EACCES)
+				strcpy(cwd, "EACCES");
+			else
+				strcpy(cwd, "EUNKNOWN");
 		}
 
 		if (!flat)
