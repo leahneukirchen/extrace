@@ -1,6 +1,6 @@
 ALL=extrace pwait
 
-CFLAGS?=-g -O2 -Wall -Wno-switch -Wextra -Wwrite-strings -pedantic -ansi
+CFLAGS?=-g -O2 -Wall -Wno-switch -Wextra -Wwrite-strings
 
 DESTDIR=
 PREFIX?=/usr/local
